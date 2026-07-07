@@ -2,15 +2,22 @@ import pygame
 
 from asteroid import Asteroid
 from constants import (
+    BOMB_RADIUS,
+    HUD_BOMBS_POSITION,
     HUD_GAME_OVER_INSTRUCTION_OFFSET,
     HUD_GAME_OVER_MESSAGE,
     HUD_GAME_OVER_QUIT_MESSAGE,
     HUD_GAME_OVER_RETRY_MESSAGE,
     HUD_LIVES_POSITION,
     HUD_SCORE_POSITION,
+    HUD_SHIELD_POSITION,
+    HUD_SPEED_POSITION,
+    PLAYER_RADIUS,
     PLAYER_STARTING_LIVES,
+    POWERUP_RADIUS,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
+    SHIELD_ABSORB_INVULNERABLE_SECONDS,
 )
 
 
@@ -33,12 +40,25 @@ class GameState:
         self.lives = PLAYER_STARTING_LIVES
         self.game_over = False
 
-    def draw(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
+    def draw(self, screen: pygame.Surface, font: pygame.font.Font, player) -> None:
         score_surface = font.render(f"Score: {self.score}", True, "white")
         screen.blit(score_surface, HUD_SCORE_POSITION)
 
         lives_surface = font.render(f"Lives: {self.lives}", True, "white")
         screen.blit(lives_surface, HUD_LIVES_POSITION)
+
+        if player.speed_timer > 0:
+            speed_surface = font.render(
+                f"Speed: {player.speed_timer:.1f}s", True, "white"
+            )
+            screen.blit(speed_surface, HUD_SPEED_POSITION)
+
+        if player.shield_active:
+            shield_surface = font.render("Shield: ON", True, "white")
+            screen.blit(shield_surface, HUD_SHIELD_POSITION)
+
+        bombs_surface = font.render(f"Bombs: {player.bombs_remaining}", True, "white")
+        screen.blit(bombs_surface, HUD_BOMBS_POSITION)
 
         if self.game_over:
             center_x = SCREEN_WIDTH // 2

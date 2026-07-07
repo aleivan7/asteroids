@@ -2,6 +2,8 @@ import pygame
 
 from circleshape import CircleShape
 from constants import (
+    BOMB_EFFECT_DURATION_SECONDS,
+    BOMB_RADIUS,
     LINE_WIDTH,
     PLAYER_ACCELERATION,
     PLAYER_BRAKE_STRENGTH,
@@ -11,8 +13,12 @@ from constants import (
     PLAYER_RESPAWN_INVULNERABLE_SECONDS,
     PLAYER_SHOOT_COOLDOWN_SECONDS,
     PLAYER_SHOT_SPEED,
+    PLAYER_STARTING_BOMBS,
     PLAYER_STOP_EPSILON,
     PLAYER_TURN_SPEED,
+    SHIELD_DRAW_RADIUS,
+    SPEED_BOOST_DURATION_SECONDS,
+    SPEED_BOOST_MULTIPLIER,
 )
 from shot import Shot
 
@@ -23,6 +29,11 @@ class Player(CircleShape):
         self.cool_down_timer = 0
         self.invulnerable_timer = 0.0
         self.rotation = 0
+        self.shield_active = False
+        self.speed_timer = 0.0
+        self.bombs_remaining = PLAYER_STARTING_BOMBS
+        self.bomb_effect_timer = 0.0
+        self.bomb_effect_position = None
 
     def triangle(self) -> list[pygame.Vector2]:
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -33,10 +44,24 @@ class Player(CircleShape):
         return [a, b, c]
 
     def draw(self, screen: pygame.Surface) -> None:
+        if self.bomb_effect_timer > 0 and self.bomb_effect_position is not None:
+            pygame.draw.circle(
+                screen,
+                "white",
+                self.bomb_effect_position,
+                BOMB_RADIUS,
+                LINE_WIDTH,
+            )
+
         if self.is_invulnerable() and int(self.invulnerable_timer * 10) % 2 == 0:
             return
 
         pygame.draw.polygon(screen, "white", self.triangle(), LINE_WIDTH)
+
+        if self.shield_active:
+            pygame.draw.circle(
+                screen, "white", self.position, SHIELD_DRAW_RADIUS, LINE_WIDTH
+            )
 
     def rotate(self, dt: float):
         self.rotation += PLAYER_TURN_SPEED * dt
@@ -44,6 +69,14 @@ class Player(CircleShape):
     def update(self, dt: float) -> None:
         if self.invulnerable_timer > 0:
             self.invulnerable_timer -= dt
+
+        if self.speed_timer > 0:
+            self.speed_timer = max(0.0, self.speed_timer - dt)
+
+        if self.bomb_effect_timer > 0:
+            self.bomb_effect_timer = max(0.0, self.bomb_effect_timer - dt)
+            if self.bomb_effect_timer <= 0:
+                self.bomb_effect_position = None
 
         keys = pygame.key.get_pressed()
 
@@ -70,9 +103,19 @@ class Player(CircleShape):
         self.position += self.velocity * dt
         self.wrap_position()
 
+    def current_acceleration(self) -> float:
+        if self.speed_timer > 0:
+            return PLAYER_ACCELERATION * SPEED_BOOST_MULTIPLIER
+        return PLAYER_ACCELERATION
+
+    def current_max_speed(self) -> float:
+        if self.speed_timer > 0:
+            return PLAYER_MAX_SPEED * SPEED_BOOST_MULTIPLIER
+        return PLAYER_MAX_SPEED
+
     def thrust(self, dt: float) -> None:
         direction = pygame.Vector2(0, 1).rotate(self.rotation)
-        self.velocity += direction * PLAYER_ACCELERATION * dt
+        self.velocity += direction * self.current_acceleration() * dt
 
     def brake(self, dt: float) -> None:
         self.slow_down(PLAYER_BRAKE_STRENGTH, dt)
@@ -93,8 +136,9 @@ class Player(CircleShape):
         self.velocity.scale_to_length(new_speed)
 
     def limit_speed(self) -> None:
-        if self.velocity.length() > PLAYER_MAX_SPEED:
-            self.velocity.scale_to_length(PLAYER_MAX_SPEED)
+        max_speed = self.current_max_speed()
+        if self.velocity.length() > max_speed:
+            self.velocity.scale_to_length(max_speed)
 
     def stop_if_slow(self) -> None:
         if self.velocity.length() < PLAYER_STOP_EPSILON:
@@ -109,6 +153,27 @@ class Player(CircleShape):
         shot = Shot(self.position.x, self.position.y)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOT_SPEED
 
+    def try_drop_bomb(self) -> pygame.Vector2 | None:
+        if self.bombs_remaining <= 0:
+            return None
+
+        self.bombs_remaining -= 1
+        self.bomb_effect_timer = BOMB_EFFECT_DURATION_SECONDS
+        self.bomb_effect_position = self.position.copy()
+        return self.position.copy()
+
+    def apply_shield(self) -> None:
+        self.shield_active = True
+
+    def apply_speed(self) -> None:
+        self.speed_timer = SPEED_BOOST_DURATION_SECONDS
+
+    def clear_temporary_effects(self) -> None:
+        self.shield_active = False
+        self.speed_timer = 0.0
+        self.bomb_effect_timer = 0.0
+        self.bomb_effect_position = None
+
     def is_vulnerable(self) -> bool:
         return self.invulnerable_timer <= 0
 
@@ -120,6 +185,7 @@ class Player(CircleShape):
         self.rotation = 0
         self.velocity = pygame.Vector2(0, 0)
         self.invulnerable_timer = PLAYER_RESPAWN_INVULNERABLE_SECONDS
+        self.clear_temporary_effects()
 
     def reset_to_start(self, x: float, y: float) -> None:
         self.position = pygame.Vector2(x, y)
@@ -127,3 +193,5 @@ class Player(CircleShape):
         self.velocity = pygame.Vector2(0, 0)
         self.cool_down_timer = 0
         self.invulnerable_timer = 0.0
+        self.bombs_remaining = PLAYER_STARTING_BOMBS
+        self.clear_temporary_effects()
