@@ -4,6 +4,7 @@ from circleshape import CircleShape
 from constants import (
     LINE_WIDTH,
     PLAYER_RADIUS,
+    PLAYER_RESPAWN_INVULNERABLE_SECONDS,
     PLAYER_SHOOT_COOLDOWN_SECONDS,
     PLAYER_SHOT_SPEED,
     PLAYER_SPEED,
@@ -16,6 +17,7 @@ class Player(CircleShape):
     def __init__(self, x: float, y: float) -> None:
         super().__init__(x, y, PLAYER_RADIUS)
         self.cool_down_timer = 0
+        self.invulnerable_timer = 0.0
         self.rotation = 0
 
     def triangle(self) -> list[pygame.Vector2]:
@@ -27,12 +29,18 @@ class Player(CircleShape):
         return [a, b, c]
 
     def draw(self, screen: pygame.Surface) -> None:
+        if self.is_invulnerable() and int(self.invulnerable_timer * 10) % 2 == 0:
+            return
+
         pygame.draw.polygon(screen, "white", self.triangle(), LINE_WIDTH)
 
     def rotate(self, dt: float):
         self.rotation += PLAYER_TURN_SPEED * dt
 
     def update(self, dt: float) -> None:
+        if self.invulnerable_timer > 0:
+            self.invulnerable_timer -= dt
+
         keys = pygame.key.get_pressed()
 
         self.cool_down_timer -= dt
@@ -48,6 +56,8 @@ class Player(CircleShape):
         if keys[pygame.K_SPACE]:
             self.shoot()
 
+        self.wrap_around_screen()
+
     def move(self, dt: float) -> None:
         unit_vector = pygame.Vector2(0, 1)
         rotated_vector = unit_vector.rotate(self.rotation)
@@ -62,3 +72,22 @@ class Player(CircleShape):
 
         shot = Shot(self.position.x, self.position.y)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOT_SPEED
+
+    def is_vulnerable(self) -> bool:
+        return self.invulnerable_timer <= 0
+
+    def is_invulnerable(self) -> bool:
+        return self.invulnerable_timer > 0
+
+    def respawn(self, x: float, y: float) -> None:
+        self.position = pygame.Vector2(x, y)
+        self.rotation = 0
+        self.velocity = pygame.Vector2(0, 0)
+        self.invulnerable_timer = PLAYER_RESPAWN_INVULNERABLE_SECONDS
+
+    def reset_to_start(self, x: float, y: float) -> None:
+        self.position = pygame.Vector2(x, y)
+        self.rotation = 0
+        self.velocity = pygame.Vector2(0, 0)
+        self.cool_down_timer = 0
+        self.invulnerable_timer = 0.0
