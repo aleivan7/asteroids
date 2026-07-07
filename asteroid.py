@@ -121,3 +121,19 @@ class Asteroid(CircleShape):
 
         asteroid_1.velocity = velocity_1 * 1.2
         asteroid_2.velocity = velocity_2 * 1.2
+
+
+def destroy_asteroids_in_radius(
+    asteroids: pygame.sprite.Group,
+    center: pygame.Vector2,
+    radius: float,
+    on_hit,
+) -> None:
+    hit_something = True
+    while hit_something:
+        hit_something = False
+        for asteroid in list(asteroids):
+            if asteroid.collides_with_circle(center, radius):
+                on_hit(asteroid)
+                asteroid.split()
+                hit_something = True

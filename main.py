@@ -1,6 +1,6 @@
 import pygame
 
-from asteroid import Asteroid
+from asteroid import Asteroid, destroy_asteroids_in_radius
 from asteroidfield import AsteroidField
 from constants import (
     BOMB_RADIUS,
@@ -85,10 +85,12 @@ def main():
             ):
                 center = player.try_drop_bomb()
                 if center is not None:
-                    for asteroid in list(asteroids):
-                        if asteroid.collides_with_circle(center, BOMB_RADIUS):
-                            game_state.add_asteroid_score(asteroid)
-                            asteroid.split()
+                    destroy_asteroids_in_radius(
+                        asteroids,
+                        center,
+                        BOMB_RADIUS,
+                        game_state.add_asteroid_score,
+                    )
                     log_event("bomb_dropped")
 
         if not game_state.game_over:
