@@ -29,12 +29,6 @@ If `uv` is not recognized after installing it, restart your terminal or add its 
 3. **Run the game**:
 
    ```bash
-   uv run asteroids
-   ```
-
-   Or run the entry script directly:
-
-   ```bash
    uv run main.py
    ```
 

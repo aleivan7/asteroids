@@ -26,10 +26,6 @@ class CircleShape(pygame.sprite.Sprite):
         # must override
         pass
 
-    def collides_with(self, shape: "CircleShape") -> bool:
-        distance = self.position.distance_to(shape.position)
-        return distance <= self.radius + shape.radius
-
     def wrap_position(self) -> None:
         if self.position.x < -self.radius:
             self.position.x = SCREEN_WIDTH + self.radius

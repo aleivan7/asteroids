@@ -100,61 +100,6 @@ class Player(CircleShape):
         if self.velocity.length() < PLAYER_STOP_EPSILON:
             self.velocity = pygame.Vector2(0, 0)
 
-    def collides_with_circle(self, shape: CircleShape) -> bool:
-        triangle = self.triangle()
-        if self.point_is_inside_triangle(shape.position, triangle):
-            return True
-
-        return (
-            self.circle_touches_segment(
-                shape.position, shape.radius, triangle[0], triangle[1]
-            )
-            or self.circle_touches_segment(
-                shape.position, shape.radius, triangle[1], triangle[2]
-            )
-            or self.circle_touches_segment(
-                shape.position, shape.radius, triangle[2], triangle[0]
-            )
-        )
-
-    def point_is_inside_triangle(
-        self, point: pygame.Vector2, triangle: list[pygame.Vector2]
-    ) -> bool:
-        a, b, c = triangle
-        d1 = self.triangle_sign(point, a, b)
-        d2 = self.triangle_sign(point, b, c)
-        d3 = self.triangle_sign(point, c, a)
-
-        has_negative = d1 < 0 or d2 < 0 or d3 < 0
-        has_positive = d1 > 0 or d2 > 0 or d3 > 0
-        return not (has_negative and has_positive)
-
-    def triangle_sign(
-        self, point: pygame.Vector2, start: pygame.Vector2, end: pygame.Vector2
-    ) -> float:
-        return (point.x - end.x) * (start.y - end.y) - (
-            start.x - end.x
-        ) * (point.y - end.y)
-
-    def circle_touches_segment(
-        self,
-        circle_center: pygame.Vector2,
-        circle_radius: float,
-        segment_start: pygame.Vector2,
-        segment_end: pygame.Vector2,
-    ) -> bool:
-        segment = segment_end - segment_start
-        segment_length_squared = segment.length_squared()
-        if segment_length_squared == 0:
-            distance_squared = circle_center.distance_squared_to(segment_start)
-            return distance_squared <= circle_radius**2
-
-        # Clamp the projection so the closest point stays on this triangle edge.
-        t = (circle_center - segment_start).dot(segment) / segment_length_squared
-        t = max(0, min(1, t))
-        closest_point = segment_start + segment * t
-        return circle_center.distance_squared_to(closest_point) <= circle_radius**2
-
     def shoot(self) -> None:
         if self.cool_down_timer > 0:
             return
