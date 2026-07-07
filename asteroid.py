@@ -6,6 +6,8 @@ from circleshape import CircleShape
 from constants import (
     ASTEROID_MAX_RADIUS,
     ASTEROID_MIN_RADIUS,
+    ASTEROID_LUMPINESS,
+    ASTEROID_NUM_VERTICES,
     LINE_WIDTH,
     SCORE_LARGE_ASTEROID,
     SCORE_MEDIUM_ASTEROID,
@@ -17,13 +19,28 @@ from logger import log_event
 class Asteroid(CircleShape):
     def __init__(self, x: float, y: float, radius: float) -> None:
         super().__init__(x, y, radius)
+        self.outline_points = self.make_outline_points()
 
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.circle(screen, "white", self.position, self.radius, LINE_WIDTH)
+        points = [self.position + point for point in self.outline_points]
+        pygame.draw.polygon(screen, "white", points, LINE_WIDTH)
+
+    def make_outline_points(self) -> list[pygame.Vector2]:
+        points = []
+        angle_step = 360 / ASTEROID_NUM_VERTICES
+
+        for i in range(ASTEROID_NUM_VERTICES):
+            angle = angle_step * i
+            radius = self.radius * random.uniform(
+                1 - ASTEROID_LUMPINESS, 1 + ASTEROID_LUMPINESS
+            )
+            points.append(pygame.Vector2(0, -radius).rotate(angle))
+
+        return points
 
     def update(self, dt: float) -> None:
         self.position += self.velocity * dt
-        self.wrap_around_screen()
+        self.wrap_position()
 
     def points(self) -> int:
         if self.radius >= ASTEROID_MAX_RADIUS:

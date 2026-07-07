@@ -69,7 +69,7 @@ def main():
                 if (
                     not player_hit_this_frame
                     and player.is_vulnerable()
-                    and asteroid.collides_with(player)
+                    and player.collides_with_circle(asteroid)
                 ):
                     log_event("player_hit")
                     game_state.lose_life()
