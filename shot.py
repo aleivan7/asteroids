@@ -19,4 +19,4 @@ class Shot(CircleShape):
             return
 
         self.position += self.velocity * dt
-        self.wrap_around_screen()
+        self.wrap_position()

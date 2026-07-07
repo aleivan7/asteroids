@@ -29,12 +29,6 @@ If `uv` is not recognized after installing it, restart your terminal or add its 
 3. **Run the game**:
 
    ```bash
-   uv run asteroids
-   ```
-
-   Or run the entry script directly:
-
-   ```bash
    uv run main.py
    ```
 
@@ -45,7 +39,7 @@ That's it — a game window should open at 1280×720.
 | Key | Action |
 |-----|--------|
 | `W` | Thrust forward |
-| `S` | Thrust backward |
+| `S` | Brake |
 | `A` | Rotate left |
 | `D` | Rotate right |
 | `Space` | Shoot |
@@ -114,7 +108,12 @@ Game tuning values (screen size, speeds, spawn rate, etc.) live in `constants.py
 | Constant | Default | Description |
 |----------|---------|-------------|
 | `SCREEN_WIDTH` / `SCREEN_HEIGHT` | 1280 × 720 | Window size |
-| `PLAYER_SPEED` | 200 | Ship thrust speed |
+| `PLAYER_ACCELERATION` | 400 | Ship thrust acceleration |
+| `PLAYER_DRAG` | 120 | Ship coasting slowdown |
+| `PLAYER_BRAKE_STRENGTH` | 500 | Ship braking slowdown |
+| `PLAYER_MAX_SPEED` | 300 | Maximum ship speed |
+| `ASTEROID_NUM_VERTICES` | 12 | Number of points in each asteroid outline |
+| `ASTEROID_LUMPINESS` | 0.35 | Random radius variation for asteroid outlines |
 | `PLAYER_TURN_SPEED` | 300 | Degrees per second |
 | `PLAYER_SHOOT_COOLDOWN_SECONDS` | 0.3 | Minimum time between shots |
 | `ASTEROID_SPAWN_RATE_SECONDS` | 0.8 | Time between asteroid spawns |

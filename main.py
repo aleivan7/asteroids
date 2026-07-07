@@ -10,7 +10,8 @@ from shot import Shot
 
 
 def main():
-    pygame.init()
+    pygame.display.init()
+    pygame.font.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     print(f"Starting Asteroids with pygame version: {pygame.version.ver}")
@@ -69,7 +70,7 @@ def main():
                 if (
                     not player_hit_this_frame
                     and player.is_vulnerable()
-                    and asteroid.collides_with(player)
+                    and asteroid.collides_with_triangle(player.triangle())
                 ):
                     log_event("player_hit")
                     game_state.lose_life()
@@ -78,7 +79,7 @@ def main():
                     player_hit_this_frame = True
 
                 for shot in shots:
-                    if asteroid.collides_with(shot):
+                    if asteroid.collides_with_circle(shot.position, shot.radius):
                         game_state.add_asteroid_score(asteroid)
                         log_event("asteroid_shot")
                         shot.kill()
