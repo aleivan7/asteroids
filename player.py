@@ -11,6 +11,7 @@ from constants import (
     PLAYER_RESPAWN_INVULNERABLE_SECONDS,
     PLAYER_SHOOT_COOLDOWN_SECONDS,
     PLAYER_SHOT_SPEED,
+    PLAYER_MAX_BOMBS,
     PLAYER_STARTING_BOMBS,
     PLAYER_STOP_EPSILON,
     PLAYER_TURN_SPEED,
@@ -30,6 +31,7 @@ class Player(CircleShape):
         self.shield_active = False
         self.speed_timer = 0.0
         self.bombs_remaining = PLAYER_STARTING_BOMBS
+        self.combat_locked = False
 
     def triangle(self) -> list[pygame.Vector2]:
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -40,10 +42,8 @@ class Player(CircleShape):
         return [a, b, c]
 
     def draw(self, screen: pygame.Surface) -> None:
-        if self.is_invulnerable() and int(self.invulnerable_timer * 10) % 2 == 0:
-            return
-
-        pygame.draw.polygon(screen, "white", self.triangle(), LINE_WIDTH)
+        if not (self.is_invulnerable() and int(self.invulnerable_timer * 10) % 2 == 0):
+            pygame.draw.polygon(screen, "white", self.triangle(), LINE_WIDTH)
 
         if self.shield_active:
             pygame.draw.circle(
@@ -127,7 +127,7 @@ class Player(CircleShape):
             self.velocity = pygame.Vector2(0, 0)
 
     def shoot(self) -> None:
-        if self.cool_down_timer > 0:
+        if self.combat_locked or self.cool_down_timer > 0:
             return
 
         self.cool_down_timer = PLAYER_SHOOT_COOLDOWN_SECONDS
@@ -148,6 +148,9 @@ class Player(CircleShape):
     def apply_speed(self) -> None:
         self.speed_timer = SPEED_BOOST_DURATION_SECONDS
 
+    def apply_bomb(self) -> None:
+        self.bombs_remaining = min(PLAYER_MAX_BOMBS, self.bombs_remaining + 1)
+
     def clear_temporary_effects(self) -> None:
         self.shield_active = False
         self.speed_timer = 0.0
@@ -164,6 +167,14 @@ class Player(CircleShape):
         self.velocity = pygame.Vector2(0, 0)
         self.invulnerable_timer = PLAYER_RESPAWN_INVULNERABLE_SECONDS
         self.clear_temporary_effects()
+
+    def reposition_for_level_up(
+        self, x: float, y: float, invulnerable_seconds: float
+    ) -> None:
+        self.position = pygame.Vector2(x, y)
+        self.rotation = 0
+        self.velocity = pygame.Vector2(0, 0)
+        self.invulnerable_timer = invulnerable_seconds
 
     def reset_to_start(self, x: float, y: float) -> None:
         self.position = pygame.Vector2(x, y)
