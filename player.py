@@ -2,8 +2,6 @@ import pygame
 
 from circleshape import CircleShape
 from constants import (
-    BOMB_EFFECT_DURATION_SECONDS,
-    BOMB_RADIUS,
     LINE_WIDTH,
     PLAYER_ACCELERATION,
     PLAYER_BRAKE_STRENGTH,
@@ -32,8 +30,6 @@ class Player(CircleShape):
         self.shield_active = False
         self.speed_timer = 0.0
         self.bombs_remaining = PLAYER_STARTING_BOMBS
-        self.bomb_effect_timer = 0.0
-        self.bomb_effect_position = None
 
     def triangle(self) -> list[pygame.Vector2]:
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -44,15 +40,6 @@ class Player(CircleShape):
         return [a, b, c]
 
     def draw(self, screen: pygame.Surface) -> None:
-        if self.bomb_effect_timer > 0 and self.bomb_effect_position is not None:
-            pygame.draw.circle(
-                screen,
-                "white",
-                self.bomb_effect_position,
-                BOMB_RADIUS,
-                LINE_WIDTH,
-            )
-
         if self.is_invulnerable() and int(self.invulnerable_timer * 10) % 2 == 0:
             return
 
@@ -72,11 +59,6 @@ class Player(CircleShape):
 
         if self.speed_timer > 0:
             self.speed_timer = max(0.0, self.speed_timer - dt)
-
-        if self.bomb_effect_timer > 0:
-            self.bomb_effect_timer = max(0.0, self.bomb_effect_timer - dt)
-            if self.bomb_effect_timer <= 0:
-                self.bomb_effect_position = None
 
         keys = pygame.key.get_pressed()
 
@@ -153,14 +135,12 @@ class Player(CircleShape):
         shot = Shot(self.position.x, self.position.y)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOT_SPEED
 
-    def try_drop_bomb(self) -> pygame.Vector2 | None:
+    def try_use_bomb(self) -> bool:
         if self.bombs_remaining <= 0:
-            return None
+            return False
 
         self.bombs_remaining -= 1
-        self.bomb_effect_timer = BOMB_EFFECT_DURATION_SECONDS
-        self.bomb_effect_position = self.position.copy()
-        return self.position.copy()
+        return True
 
     def apply_shield(self) -> None:
         self.shield_active = True
@@ -171,8 +151,6 @@ class Player(CircleShape):
     def clear_temporary_effects(self) -> None:
         self.shield_active = False
         self.speed_timer = 0.0
-        self.bomb_effect_timer = 0.0
-        self.bomb_effect_position = None
 
     def is_vulnerable(self) -> bool:
         return self.invulnerable_timer <= 0

@@ -2,6 +2,7 @@ import pygame
 
 from asteroid import Asteroid, destroy_asteroids_in_radius
 from asteroidfield import AsteroidField
+from bomb import Bomb
 from constants import (
     BOMB_RADIUS,
     HUD_FONT_SIZE,
@@ -36,6 +37,7 @@ def main():
     asteroids = pygame.sprite.Group()
     shots = pygame.sprite.Group()
     powerups = pygame.sprite.Group()
+    bombs = pygame.sprite.Group()
 
     Player.containers = (updatable, drawable)
     Asteroid.containers = (asteroids, updatable, drawable)
@@ -43,6 +45,7 @@ def main():
     Shot.containers = (shots, updatable, drawable)
     PowerUp.containers = (powerups, updatable, drawable)
     PowerUpField.containers = updatable
+    Bomb.containers = (bombs, updatable, drawable)
 
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
     asteroid_field = AsteroidField()
@@ -61,6 +64,8 @@ def main():
             shot.kill()
         for powerup in list(powerups):
             powerup.kill()
+        for bomb in list(bombs):
+            bomb.kill()
 
         asteroid_field.spawn_timer = 0.0
         powerup_field.spawn_timer = 0.0
@@ -78,20 +83,29 @@ def main():
                 if event.key == pygame.K_r:
                     reset_game()
 
-            if (
-                not game_state.game_over
-                and event.type == pygame.KEYDOWN
-                and event.key == pygame.K_b
-            ):
-                center = player.try_drop_bomb()
-                if center is not None:
-                    destroy_asteroids_in_radius(
-                        asteroids,
-                        center,
-                        BOMB_RADIUS,
-                        game_state.add_asteroid_score,
-                    )
-                    log_event("bomb_dropped")
+            if not game_state.game_over and event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_b:
+                    if player.try_use_bomb():
+                        Bomb(player.position.x, player.position.y)
+                        log_event("bomb_dropped")
+
+                if event.key == pygame.K_n:
+                    detonated_any = False
+                    for bomb in list(bombs):
+                        if bomb.detonated:
+                            continue
+
+                        destroy_asteroids_in_radius(
+                            asteroids,
+                            bomb.position,
+                            BOMB_RADIUS,
+                            game_state.add_asteroid_score,
+                        )
+                        bomb.detonate()
+                        detonated_any = True
+
+                    if detonated_any:
+                        log_event("bomb_detonated")
 
         if not game_state.game_over:
             updatable.update(dt)
@@ -141,7 +155,8 @@ def main():
         for sprite in drawable:
             sprite.draw(screen)
 
-        game_state.draw(screen, font, player)
+        deployed_bomb_count = sum(1 for bomb in bombs if not bomb.detonated)
+        game_state.draw(screen, font, player, deployed_bomb_count)
 
         pygame.display.flip()
 
