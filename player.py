@@ -11,6 +11,7 @@ from constants import (
     PLAYER_RESPAWN_INVULNERABLE_SECONDS,
     PLAYER_SHOOT_COOLDOWN_SECONDS,
     PLAYER_SHOT_SPEED,
+    PLAYER_MAX_BOMBS,
     PLAYER_STARTING_BOMBS,
     PLAYER_STOP_EPSILON,
     PLAYER_TURN_SPEED,
@@ -146,6 +147,9 @@ class Player(CircleShape):
 
     def apply_speed(self) -> None:
         self.speed_timer = SPEED_BOOST_DURATION_SECONDS
+
+    def apply_bomb(self) -> None:
+        self.bombs_remaining = min(PLAYER_MAX_BOMBS, self.bombs_remaining + 1)
 
     def clear_temporary_effects(self) -> None:
         self.shield_active = False
