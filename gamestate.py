@@ -2,6 +2,7 @@ import pygame
 
 from asteroid import Asteroid
 from constants import (
+    BOMB_SCORE_MULTIPLIER,
     HUD_GAME_OVER_INSTRUCTION_OFFSET,
     HUD_GAME_OVER_MESSAGE,
     HUD_GAME_OVER_QUIT_MESSAGE,
@@ -13,6 +14,7 @@ from constants import (
     HUD_PANEL_BORDER_COLOR,
     HUD_PANEL_BORDER_WIDTH,
     HUD_PANEL_FILL_COLOR,
+    HUD_PANEL_FILL_ALPHA,
     HUD_PANEL_PADDING,
     HUD_POWERUP_ICON_RADIUS,
     HUD_SCORE_PANEL_HEIGHT,
@@ -28,6 +30,7 @@ from constants import (
     LEVEL_TRANSITION_SECONDS,
     LINE_WIDTH,
     MAX_LEVEL,
+    PLAYER_MAX_BOMBS,
     PLAYER_STARTING_BOMBS,
     PLAYER_STARTING_LIVES,
     SCREEN_HEIGHT,
@@ -55,6 +58,9 @@ class GameState:
 
     def add_asteroid_score(self, asteroid: Asteroid) -> None:
         self.score += asteroid.points()
+
+    def add_bomb_asteroid_score(self, asteroid: Asteroid) -> None:
+        self.score += round(asteroid.points() * BOMB_SCORE_MULTIPLIER)
 
     def lose_life(self) -> None:
         self.lives -= 1
@@ -123,7 +129,9 @@ class GameState:
         screen: pygame.Surface,
         rect: pygame.Rect,
     ) -> None:
-        pygame.draw.rect(screen, HUD_PANEL_FILL_COLOR, rect)
+        panel_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
+        panel_surface.fill((*HUD_PANEL_FILL_COLOR, HUD_PANEL_FILL_ALPHA))
+        screen.blit(panel_surface, rect.topleft)
         pygame.draw.rect(
             screen,
             HUD_PANEL_BORDER_COLOR,
@@ -251,6 +259,40 @@ class GameState:
             ]
             pygame.draw.polygon(screen, HUD_TEXT_COLOR, points, LINE_WIDTH)
 
+    def draw_bomb_icon(
+        self,
+        screen: pygame.Surface,
+        center: pygame.Vector2,
+        radius: int,
+        filled: bool,
+    ) -> None:
+        if filled:
+            pygame.draw.circle(screen, HUD_TEXT_COLOR, center, radius)
+        else:
+            pygame.draw.circle(
+                screen,
+                HUD_TEXT_COLOR,
+                center,
+                radius,
+                LINE_WIDTH,
+            )
+
+        cross_size = radius * 0.6
+        pygame.draw.line(
+            screen,
+            HUD_TEXT_COLOR,
+            center + pygame.Vector2(-cross_size, 0),
+            center + pygame.Vector2(cross_size, 0),
+            LINE_WIDTH,
+        )
+        pygame.draw.line(
+            screen,
+            HUD_TEXT_COLOR,
+            center + pygame.Vector2(0, -cross_size),
+            center + pygame.Vector2(0, cross_size),
+            LINE_WIDTH,
+        )
+
     def draw_bomb_icons(
         self,
         screen: pygame.Surface,
@@ -259,21 +301,15 @@ class GameState:
         bombs_remaining: int,
         deployed_bomb_count: int,
     ) -> None:
-        total_slots = PLAYER_STARTING_BOMBS
+        total_slots = PLAYER_MAX_BOMBS
 
         for i in range(total_slots):
             center = pygame.Vector2(x + i * HUD_BOMB_ICON_SPACING, y)
 
             if i < bombs_remaining:
-                pygame.draw.circle(screen, HUD_TEXT_COLOR, center, HUD_BOMB_ICON_RADIUS)
+                self.draw_bomb_icon(screen, center, HUD_BOMB_ICON_RADIUS, filled=True)
             elif i < bombs_remaining + deployed_bomb_count:
-                pygame.draw.circle(
-                    screen,
-                    HUD_TEXT_COLOR,
-                    center,
-                    HUD_BOMB_ICON_RADIUS,
-                    LINE_WIDTH,
-                )
+                self.draw_bomb_icon(screen, center, HUD_BOMB_ICON_RADIUS, filled=False)
 
     def draw_level_transition(self, screen: pygame.Surface, font: pygame.font.Font) -> None:
         message = f"LEVEL {self.transition_to_level}"

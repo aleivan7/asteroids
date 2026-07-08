@@ -52,7 +52,7 @@ def main():
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
     game_state = GameState()
     asteroid_field = AsteroidField(asteroids, game_state)
-    powerup_field = PowerUpField(powerups)
+    powerup_field = PowerUpField(powerups, player)
 
     font = pygame.font.Font(None, HUD_FONT_SIZE)
     screen_center = pygame.Vector2(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
@@ -138,7 +138,7 @@ def main():
                             asteroids,
                             bomb.position,
                             BOMB_RADIUS,
-                            game_state.add_asteroid_score,
+                            game_state.add_bomb_asteroid_score,
                         )
                         bomb.detonate()
                         detonated_any = True
@@ -161,6 +161,8 @@ def main():
                             player.apply_shield()
                         elif powerup.kind == "speed":
                             player.apply_speed()
+                        elif powerup.kind == "bomb":
+                            player.apply_bomb()
                         powerup.kill()
                         log_event("powerup_collected")
 
